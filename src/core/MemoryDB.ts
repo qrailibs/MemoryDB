@@ -8,6 +8,7 @@ import ChoosePredicate from "../predicate/ChoosePredicate"
 
 // Analytics
 import Analytics from "../analytics/Analytics"
+import MemoryDBEvent from "./MemoryDBEvent"
 
 export default class MemoryDB<T> {
     // Unique name of the database
@@ -16,7 +17,9 @@ export default class MemoryDB<T> {
     // Debugging manipulations with database
     public debug: boolean = false
     private debugLog(action: string) {
-        console.log(`[MemoryDB] Executed "${action}"`)
+        if(this.debug) {
+            console.log(`[MemoryDB] Executed "${action}"`)
+        }
     }
 
     // Storing all data as raw array
@@ -39,34 +42,68 @@ export default class MemoryDB<T> {
         this.name = name
     }
 
+    //#region Events
+    private eventListeners: { [event: string]: Function[] } = {}
+    public when(event: MemoryDBEvent, listener: (e: any) => void) {
+        // No key for event? Create and make array
+        if(!this.eventListeners[event]) {
+            this.eventListeners[event] = []
+        }
+
+        // Add to array of event listeners
+        this.eventListeners[event].push(listener)
+    }
+    private emit(event: MemoryDBEvent, e: any = null) {
+        // Event listeners for this event is defined?
+        if(this.eventListeners[event]) {
+            for(let listener of this.eventListeners[event]) {
+                listener(e)
+            }
+        }
+    }
+
+    //#endregion
+
     // Insert value to database
     public insert(value: T | T[]): MemoryDBResult<T> {
         // Batch insert
         if(Array.isArray(value)) {
             this.data = this.data.concat(value)
 
-            // Success
+            // Log, Emit event
             this.debugLog('insert')
+            this.emit(MemoryDBEvent.Insert, { value })
+
+            // Success
             return new MemoryDBResult(true)
         }
         // Single insert
         else {
             this.data.push(value)
 
-            // Success
+            // Log, Emit event
             this.debugLog('insert')
+            this.emit(MemoryDBEvent.Insert, { value })
+
+            // Success
             return new MemoryDBResult(true)
         }
     }
 
+    //#region Finding
     // Get list of values from database
     public list(): MemoryDBResult<T> {
         let data: T[] = this.data
 
-        // Success
+        // Log, Emit event
         this.debugLog('list')
+        this.emit(MemoryDBEvent.List, { data })
+
+        // Success
         return new MemoryDBResult(true, data)
     }
+    //TODO: find, search
+    //#endregion
 
     //#region Manipulations
     // Sort rows by predicate
@@ -77,7 +114,10 @@ export default class MemoryDB<T> {
         // Save
         if(save) {
             this.data = data
+
+            // Log, Emit event
             this.debugLog('sort')
+            this.emit(MemoryDBEvent.Sort, { data })
         }
 
         // Success
@@ -92,7 +132,10 @@ export default class MemoryDB<T> {
         // Save
         if(save) {
             this.data = data
+            
+            // Log, Emit event
             this.debugLog('remove')
+            this.emit(MemoryDBEvent.Remove, { data })
         }
 
         // Success

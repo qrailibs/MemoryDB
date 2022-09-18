@@ -1,6 +1,11 @@
-import Analytics from "./analytics/Analytics"
 import MemoryDB from "./core/MemoryDB"
+import MemoryDBEvent from "./core/MemoryDBEvent"
+import MemoryDBResult from "./core/MemoryDBResult"
+
+import Analytics from "./analytics/Analytics"
+
 import AscendingSort from "./sorting/AscendingSort"
+import DescendingSort from "./sorting/DescendingSort"
 
 type Book = { name: string, writtenIn: number }
 
@@ -19,3 +24,14 @@ console.log(db.raw)
 
 let analytics: Analytics<Book> = db.Analytics
 console.log(analytics.len('writtenIn'))
+
+export {
+	// Core
+	MemoryDB,
+	MemoryDBResult,
+	MemoryDBEvent,
+
+	// Sorting
+	AscendingSort,
+	DescendingSort
+}
