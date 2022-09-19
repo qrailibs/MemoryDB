@@ -9,6 +9,7 @@ import ChoosePredicate from "../predicate/ChoosePredicate"
 // Analytics
 import Analytics from "../analytics/Analytics"
 import MemoryDBEvent from "./MemoryDBEvent"
+import ColumnQuery from "../analytics/ColumnQuery"
 
 export default class MemoryDB<T> {
     // Unique name of the database
@@ -142,11 +143,48 @@ export default class MemoryDB<T> {
         return new MemoryDBResult(true, data)
     }
 
-    // Remove duplicates by predicate (choosing one of duplicates)
-    public removeDuplicates(predicate: ChoosePredicate<T>, save: boolean = true): MemoryDBResult<T> {
+    // Remove duplicates
+    public removeDuplicates(save: boolean = true) {
+        // Make values unique
+        let data: T[] = [ ...new Set(this.data) ]
+
+        // Save
+        if(save) {
+            this.data = data
+            
+            // Log, Emit event
+            this.debugLog('removeDuplicates')
+            this.emit(MemoryDBEvent.RemoveDuplicates, { data })
+        }
 
         // Success
-        return new MemoryDBResult(true)
+        return new MemoryDBResult(true, data)
+    }
+
+    // Remove duplicates by predicate (choosing one of duplicates)
+    public removeDuplicatesByPredicate(predicate: ChoosePredicate<T>, column?: ColumnQuery, save: boolean = true): MemoryDBResult<T> {
+        // Get duplicates
+        let duplicates: T[] = this.Analytics.duplicates(column)
+
+        // Choose duplicate to keep (with predicate)
+        let keepDuplicates: T[] = predicate(duplicates)
+
+        // Remove duplicates
+        let data: T[] = column
+            ? this.data.filter((row: T) => duplicates.includes(row) ? keepDuplicates.includes(row) : true)
+            : [ ...new Set(this.data) ]
+
+        // Save
+        if(save) {
+            this.data = data
+            
+            // Log, Emit event
+            this.debugLog('removeDuplicates')
+            this.emit(MemoryDBEvent.RemoveDuplicates, { data })
+        }
+
+        // Success
+        return new MemoryDBResult(true, data)
     }
     //#endregion
 }

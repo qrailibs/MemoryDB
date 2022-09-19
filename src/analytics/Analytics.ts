@@ -171,18 +171,18 @@ export default class Analytics<T> {
         return rows.filter((row: T) => (row as any)[column] == null)
     }
     // Find rows where values of column are duplicates
-    public duplicates(column: string): T[] {
+    public duplicates(column?: ColumnQuery): T[] {
         // Get database rows
         let rows: T[] = this.rows()
 
         // Find values that are duplicate
         const duplicateValues: any[] = rows
-            .map((row: T) => (row as any)[column])
+            .map((row: T) => column?.use(row as any))
             .filter((val: any, index: number, arr: any[]) => arr.indexOf(val) !== index)
 
         // Find rows of values that duplicate
         const duplicates: T[] = rows
-            .filter((row: T) => duplicateValues.includes((row as any)[column]))
+            .filter((row: T) => duplicateValues.includes(column?.use(row as any)))
 
         return duplicates
     }

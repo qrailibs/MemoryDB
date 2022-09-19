@@ -2,6 +2,7 @@ enum MemoryDBEvent {
     // Change operations
     Insert = 'insert',
     Remove = 'remove',
+    RemoveDuplicates = 'removeDuplicates',
     Sort = 'sort',
 
     // Get operations

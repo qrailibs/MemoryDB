@@ -1,3 +1,3 @@
-type ChoosePredicate<T> = (rows: T[]) => T
+type ChoosePredicate<T> = (rows: T[]) => T[]
 
 export default ChoosePredicate
