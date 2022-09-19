@@ -2,7 +2,8 @@
   "name": "memorydb",
   "version": "1.0.0",
   "description": "In-memory database with Queries, Event-handling, Analytics written in TypeScript",
-  "main": "index.js",
+  "main": "build/index.js",
+  "files": ["build"],
   "scripts": {
     "serve": "nodemon",
     "build": "npx tsc",

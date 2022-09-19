@@ -1,6 +1,7 @@
 import MemoryDB from "../core/MemoryDB"
 import MemoryDBResult from "../core/MemoryDBResult"
 import SortPredicate from "../predicate/SortPredicate"
+import ColumnQuery from "./ColumnQuery"
 
 export default class Analytics<T> {
     private db: MemoryDB<T>
@@ -25,6 +26,7 @@ export default class Analytics<T> {
 
         return result.data
     }
+
     // Get rows sorted
     private sort(sorter: SortPredicate<T>): T[] {
         // Get rows from database
@@ -42,20 +44,67 @@ export default class Analytics<T> {
         return result.data
     }
 
+    // Get rows numbers
+    private rowsNumbers(column?: ColumnQuery): number[] {
+        // Get database rows
+        let data: T[] = this.rows()
+
+        // Get numbers from rows
+        let numbers: number[] = data.map((row: T) => {
+            if(typeof row === 'number') {
+                return row
+            }
+            else if(column) {
+                let val = column.use(row as any)
+                return typeof val === 'number' ? val : NaN
+            }
+            else {
+                return NaN
+            }
+        })
+
+        return numbers
+    }
+
     //#region Mathematical
+    public min(column?: ColumnQuery): number {
+        // Known value without calculating
+        if(this.db.length === 0) {
+            return NaN
+        }
+
+        // Get database rows as numbers
+        let data: number[] = this.rowsNumbers(column)
+
+        // Get min value
+        return Math.min(...data)
+    }
+    public max(column?: ColumnQuery): number {
+        // Known value without calculating
+        if(this.db.length === 0) {
+            return NaN
+        }
+
+        // Get database rows as numbers
+        let data: number[] = this.rowsNumbers(column)
+
+        // Get min value
+        return Math.max(...data)
+    }
+
     // Get length of rows with this column
-    public len(column: string): number {
+    public len(column?: ColumnQuery): number {
         // Known value without calculating
         if(this.db.length === 0) {
             return 0
         }
 
-        // Get database rows
-        let data: T[] = this.rows()
+        // Get database rows as numbers
+        let data: number[] = this.rowsNumbers(column)
 
         // Accumulate and return
-        return data.reduce((accum: number, row: T) => 
-            accum + ((row as any)[column] != null ? 1 : 0), 0
+        return data.reduce((accum: number, row: number) => 
+            accum + (row != NaN ? 1 : 0), 0
         )
     }
 
