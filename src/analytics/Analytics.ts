@@ -3,6 +3,11 @@ import MemoryDBResult from "../core/MemoryDBResult"
 import SortPredicate from "../predicate/SortPredicate"
 import ColumnQuery from "./ColumnQuery"
 
+type Segment<T> = {
+    percent: number,
+    value: T
+}
+
 export default class Analytics<T> {
     private db: MemoryDB<T>
 
@@ -44,7 +49,15 @@ export default class Analytics<T> {
         return result.data
     }
 
-    // Get rows numbers
+    // Get values of column
+    private values(column: ColumnQuery): T[] {
+        // Get database rows
+        let data: T[] = this.rows()
+        return data.map((row: T) => {
+            return column.use(row as any)
+        })
+    }
+    // Get values of column as number
     private rowsNumbers(column?: ColumnQuery): number[] {
         // Get database rows
         let data: T[] = this.rows()
@@ -65,6 +78,14 @@ export default class Analytics<T> {
 
         return numbers
     }
+
+    //#region Graphs
+    public segments(column: ColumnQuery): Segment<T>[] {
+        let values: T[] = this.values(column)
+        // TODO: calculate
+        return []
+    }
+    //#endregion
 
     //#region Mathematical
     public min(column?: ColumnQuery): number {
