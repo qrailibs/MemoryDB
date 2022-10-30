@@ -19,7 +19,6 @@ describe('Testing database duplicates removing (removeDuplicates())', () => {
 	test('Try to remove duplicates (simple)', () => {
 		// Create database
 		let db: MemoryDB<number> = new MemoryDB('test')
-		db.debug = true
 		db.insert(numbers)
 
 		// Remove duplicates

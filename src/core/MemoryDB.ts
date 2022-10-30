@@ -162,12 +162,13 @@ export default class MemoryDB<T> {
     }
 
     // Remove duplicates by predicate (choosing one of duplicates)
-    public removeDuplicatesByPredicate(predicate: ChoosePredicate<T>, column?: ColumnQuery, save: boolean = true): MemoryDBResult<T> {
+    public removeDuplicatesByPredicate(predicate: ChoosePredicate<T>, column: ColumnQuery, save: boolean = true): MemoryDBResult<T> {
         // Get duplicates
         let duplicates: T[] = this.Analytics.duplicates(column)
 
         // Choose duplicate to keep (with predicate)
-        let keepDuplicates: T[] = predicate(duplicates)
+        let predicateResult: T | T[] = predicate(duplicates)
+        let keepDuplicates: T[] = Array.isArray(predicateResult) ? predicateResult : [ predicateResult ]
 
         // Remove duplicates
         let data: T[] = column
