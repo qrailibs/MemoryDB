@@ -1,7 +1,13 @@
 import MemoryDB from "../core/MemoryDB"
 import MemoryDBResult from "../core/MemoryDBResult"
+import MatchPredicate from "../predicate/MatchPredicate"
 import SortPredicate from "../predicate/SortPredicate"
 import ColumnQuery from "./ColumnQuery"
+
+type Segment<T> = {
+    percent: number,
+    value: T
+}
 
 export default class Analytics<T> {
     private db: MemoryDB<T>
@@ -44,7 +50,23 @@ export default class Analytics<T> {
         return result.data
     }
 
-    // Get rows numbers
+    // Get values of column
+    private values(column?: ColumnQuery): any[] {
+        // Get database rows
+        let data: T[] = this.rows()
+
+        // From column
+        if(column) {
+            return data.map((row: T) => {
+                return column.use(row as any)
+            })
+        }
+        // As row
+        else {
+            return data
+        }
+    }
+    // Get values of column as number
     private rowsNumbers(column?: ColumnQuery): number[] {
         // Get database rows
         let data: T[] = this.rows()
@@ -65,6 +87,14 @@ export default class Analytics<T> {
 
         return numbers
     }
+
+    //#region Graphs
+    public segments(column: ColumnQuery): Segment<T>[] {
+        let values: T[] = this.values(column)
+        // TODO: calculate
+        return []
+    }
+    //#endregion
 
     //#region Mathematical
     public min(column?: ColumnQuery): number {
@@ -92,6 +122,22 @@ export default class Analytics<T> {
         return Math.max(...data)
     }
 
+    // Get amount of rows that met predicate
+    public count(predicate: MatchPredicate<any>, column?: ColumnQuery): number {
+        // Known value without calculating
+        if(this.db.length === 0) {
+            return 0
+        }
+
+        // Get values
+        let data: T[] = this.values(column)
+
+        // Accumulate count and return
+        return data.reduce((accum: number, val: any) => 
+            accum + (predicate(val) ? 1 : 0), 0
+        )
+    }
+
     // Get length of rows with this column
     public len(column?: ColumnQuery): number {
         // Known value without calculating
@@ -100,11 +146,11 @@ export default class Analytics<T> {
         }
 
         // Get database rows as numbers
-        let data: number[] = this.rowsNumbers(column)
+        let data: number[] = this.values(column)
 
         // Accumulate and return
-        return data.reduce((accum: number, row: number) => 
-            accum + (row != NaN ? 1 : 0), 0
+        return data.reduce((accum: number, row: any) => 
+            accum + (row ? 1 : 0), 0
         )
     }
 

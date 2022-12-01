@@ -62,7 +62,6 @@ export default class MemoryDB<T> {
             }
         }
     }
-
     //#endregion
 
     // Insert value to database
@@ -103,7 +102,34 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, data)
     }
-    //TODO: find, search
+    // Find value in database
+    public find(predicate: MatchPredicate<T>): MemoryDBResult<T> {
+        let data: T[] = this.data
+        
+        // Find
+        let result: T | null = data.find(predicate) ?? null
+
+        // Log, Emit event
+        this.debugLog('find')
+        this.emit(MemoryDBEvent.Find, { data: result })
+
+        // Success
+        return new MemoryDBResult(true, result)
+    }
+    // Search for values in database
+    public search(predicate: MatchPredicate<T>): MemoryDBResult<T> {
+        let data: T[] = this.data
+        
+        // Find
+        let result: T[] = data.filter(predicate)
+
+        // Log, Emit event
+        this.debugLog('search')
+        this.emit(MemoryDBEvent.Search, { data: result })
+
+        // Success
+        return new MemoryDBResult(true, result)
+    }
     //#endregion
 
     //#region Manipulations

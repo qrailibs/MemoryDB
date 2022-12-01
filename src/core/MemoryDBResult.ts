@@ -1,4 +1,4 @@
-type MemoryDBResultData<T> = T[] | T
+type MemoryDBResultData<T> = T[] | T | null
 type MemoryDBResultError = string | null
 
 export default class MemoryDBResult<T> {
