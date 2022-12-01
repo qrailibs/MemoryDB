@@ -10,6 +10,7 @@ import ChoosePredicate from "../predicate/ChoosePredicate"
 import Analytics from "../analytics/Analytics"
 import MemoryDBEvent from "./MemoryDBEvent"
 import ColumnQuery from "../analytics/ColumnQuery"
+import MergePredicate from "../predicate/MergePredicate"
 
 export default class MemoryDB<T> {
     // Unique name of the database
@@ -170,7 +171,7 @@ export default class MemoryDB<T> {
     }
 
     // Remove duplicates
-    public removeDuplicates(save: boolean = true) {
+    public removeDuplicates(save: boolean = true): MemoryDBResult<T> {
         // Make values unique
         let data: T[] = [ ...new Set(this.data) ]
 
@@ -208,6 +209,31 @@ export default class MemoryDB<T> {
             // Log, Emit event
             this.debugLog('removeDuplicates')
             this.emit(MemoryDBEvent.RemoveDuplicates, { data })
+        }
+
+        // Success
+        return new MemoryDBResult(true, data)
+    }
+
+    // Merge another database into current
+    public merge(db: MemoryDB<T>, predicate: MergePredicate<T>, save: boolean = true): MemoryDBResult<T> {
+        // Try to get data from another database
+        let result: MemoryDBResult<T> = db.list()
+        if(!result.success) { return new MemoryDBResult(false) }
+
+        // What data should be merged?
+        let mergingData: T[] = (result.data as T[]).filter((row: T) => predicate(this.raw, row))
+
+        // Merge data
+        let data: T[] = this.data.concat(mergingData)
+
+        // Save
+        if(save) {
+            this.data = data
+
+            // Log, Emit event
+            this.debugLog('merge')
+            this.emit(MemoryDBEvent.Merge, { data })
         }
 
         // Success
