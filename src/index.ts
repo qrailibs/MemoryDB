@@ -2,6 +2,8 @@ import MemoryDB from "./core/MemoryDB"
 import MemoryDBEvent from "./core/MemoryDBEvent"
 import MemoryDBResult from "./core/MemoryDBResult"
 
+import CSVExporter from "./export/CSVExporter"
+
 import Analytics from "./analytics/Analytics"
 import ColumnQuery from "./analytics/ColumnQuery"
 
@@ -13,6 +15,9 @@ export {
 	MemoryDB,
 	MemoryDBResult,
 	MemoryDBEvent,
+
+	// Export
+	CSVExporter,
 
 	// Analytics
 	Analytics,

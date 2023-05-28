@@ -34,7 +34,7 @@ describe('Testing merge() function', () => {
 		
 		// Test that operation was successfull
 		expect(result.success).toBe(true)
-		expect((result.data as Toy[]).length).toBe(6)
+		expect((result.data as Toy[]).length).toBe(toys_1.length + toys_2.length)
 	})
 	test('Try to merge one database into another with merge predicate', () => {
 		// Create database (1) with 5 toys

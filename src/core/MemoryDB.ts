@@ -12,6 +12,9 @@ import MemoryDBEvent from "./MemoryDBEvent"
 import ColumnQuery from "../analytics/ColumnQuery"
 import MergePredicate from "../predicate/MergePredicate"
 
+// Core
+//import { createReadStream } from "fs"
+
 export default class MemoryDB<T> {
     // Unique name of the database
     public name: string
@@ -239,5 +242,9 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, data)
     }
+    //#endregion
+
+    //#region Serialization
+    
     //#endregion
 }
