@@ -4,9 +4,9 @@ import MatchPredicate from "../predicate/MatchPredicate"
 import SortPredicate from "../predicate/SortPredicate"
 import ColumnQuery from "./ColumnQuery"
 
-type Segment<T> = {
-    percent: number,
-    value: T
+type Segment = {
+    percentage: number,
+    value: any
 }
 
 export default class Analytics<T> {
@@ -15,7 +15,11 @@ export default class Analytics<T> {
     constructor(database: MemoryDB<T>) {
         this.db = database
     }
-    
+
+    private percentage(partialValue: number, totalValue: number) {
+        return (100 * partialValue) / totalValue;
+    }
+
     // Get rows
     private rows(): T[] {
         // Get rows from database
@@ -66,6 +70,9 @@ export default class Analytics<T> {
             return data
         }
     }
+    private value(row: T, column?: ColumnQuery) {
+        return column ? column.use(row as any) : row
+    }
     // Get values of column as number
     private rowsNumbers(column?: ColumnQuery): number[] {
         // Get database rows
@@ -89,10 +96,33 @@ export default class Analytics<T> {
     }
 
     //#region Graphs
-    public segments(column: ColumnQuery): Segment<T>[] {
-        let values: T[] = this.values(column)
-        // TODO: calculate
-        return []
+    // Get occurrences in column and amount of them
+    public occurrences(column: ColumnQuery, percentage: boolean = false): Record<string, number> {
+        let values: any[] = this.values(column)
+        
+        // 1. Count amount of occurrences of each value
+        let _occurrences: Record<string, number> = {}
+        for(let value of values) {
+            if(value.toString() in _occurrences) {
+                _occurrences[value]++
+            }
+            else {
+                _occurrences[value] = 1
+            }
+        }
+
+        // 2. Calculate percentage
+        if(percentage === true) {
+            let amountOfValues = this.db.length
+
+            for(let value in _occurrences) {
+                let amount = _occurrences[value]
+
+                _occurrences[value] = this.percentage(amount, amountOfValues)
+            }
+        }
+
+        return _occurrences
     }
     //#endregion
 
@@ -155,23 +185,23 @@ export default class Analytics<T> {
     }
 
     // Get sum of number values (by column in database)
-    public sum(column: string): number {
+    public sum(column?: ColumnQuery): number {
         // Cannot calculate without rows
         if(this.db.length === 0) {
             return NaN
         }
 
         // Get database rows
-        let rows: T[] = this.rows()
+        let values: T[] = this.values(column)
 
         // Accumulate and return
-        return rows.reduce((accum: number, row: T) =>
-            accum + (row as any)[column] ?? 0, 0
+        return values.reduce((accum: number, value: T) =>
+            accum + (typeof value === 'number' ? value : 0), 0
         )
     }
 
     // Get median value of number values (by column in database)
-    public median(column: string): number {
+    public median(column?: ColumnQuery): number {
         // Cannot calculate without rows
         if(this.db.length === 0) {
             return NaN
@@ -179,7 +209,7 @@ export default class Analytics<T> {
 
         // Sort rows
         let rows: T[] = this.sort((a: T, b: T) => {
-            return (a as any)[column] ?? 0 - (b as any)[column] ?? 0
+            return this.value(a, column) ?? 0 - this.value(b, column) ?? 0
         })
 
         // Get median index
@@ -187,19 +217,19 @@ export default class Analytics<T> {
 
         // Is fully median?
         if (this.db.length % 2) {
-            return (rows[halfIndex] as any)[column]
+            return this.value(rows[halfIndex], column)
         }
         else {
             return (
                 // ((Half - 1) + Half) / 2.0
-                (rows[halfIndex - 1] as any)[column]
-                + (rows[halfIndex] as any)[column]
+                this.value(rows[halfIndex - 1], column)
+                + this.value(rows[halfIndex], column)
             ) / 2.0
         }
     }
 
     // Get average value of number values (by column in database)
-    public average(column: string): number {
+    public average(column?: ColumnQuery): number {
         let sum: number = this.sum(column)
 
         // Avg = Sum / Len

@@ -99,3 +99,30 @@ describe('Testing analytics count() function', () => {
 		expect(analytics.count(predicate, new ColumnQuery('name'))).toEqual(3)
 	})
 })
+
+describe('Testing analytics sum() function', () => {
+	test('Try to calculate sum from numbers', () => {
+		// Create database with 5 number values
+		let db: MemoryDB<number> = new MemoryDB('test')
+		db.insert(numbers)
+
+		// Prepare analytics
+		let analytics: Analytics<number> = db.Analytics
+		
+		// Get sum of values
+		expect(analytics.sum()).toEqual(numbers.reduce((val, accum) => accum + val))
+	})
+	/*test('Try to calculate amount from rows', () => {
+		// Create database with 5 number values
+		let db: MemoryDB<Toy> = new MemoryDB('test')
+		db.insert(toys)
+
+		// Prepare analytics
+		let analytics: Analytics<Toy> = db.Analytics
+
+		// Get amount of rows with name starts with 'Toy'
+		expect(analytics.sum(new ColumnQuery('price'))).toEqual(
+			toys.reduce((val, accum) => accum + val.price)
+		)
+	})*/
+})
