@@ -4,6 +4,7 @@ enum MemoryDBEvent {
     Remove = 'remove',
     RemoveDuplicates = 'removeDuplicates',
     Sort = 'sort',
+    Merge = 'merge',
 
     // Get operations
     List = 'list',
