@@ -7,6 +7,7 @@ enum MemoryDBEvent {
 
     // Get operations
     List = 'list',
+    ListPaginated = 'listPaginated',
     Search = 'search',
     Find = 'find'
 }

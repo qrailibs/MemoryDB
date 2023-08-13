@@ -102,6 +102,17 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, data)
     }
+    // Get list of values (paginated) from database
+    public listPaginated(page: number, perPage: number = 50): MemoryDBResult<T> {
+        let data: T[] = this.data.slice((page - 1) * perPage, page * perPage)
+
+        // Log, Emit event
+        this.debugLog('listPaginated')
+        this.emit(MemoryDBEvent.ListPaginated, { data })
+
+        // Success
+        return new MemoryDBResult(true, data)
+    }
     // Find value in database
     public find(predicate: MatchPredicate<T>): MemoryDBResult<T> {
         let data: T[] = this.data
