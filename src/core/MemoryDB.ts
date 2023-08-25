@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 // Result
 import MemoryDBResult from "./MemoryDBResult"
 
@@ -11,6 +13,7 @@ import Analytics from "../analytics/Analytics"
 import MemoryDBEvent from "./MemoryDBEvent"
 import ColumnQuery from "../analytics/ColumnQuery"
 import MergePredicate from "../predicate/MergePredicate"
+import ILoader from "../loader/ILoader"
 
 // Core
 //import { createReadStream } from "fs"
@@ -173,6 +176,21 @@ export default class MemoryDB<T> {
         return new MemoryDBResult(true, data)
     }
 
+    // Remove all rows
+    public clear(save: boolean = true): MemoryDBResult<T> {
+        // Save
+        if(save) {
+            this.data = []
+            
+            // Log, Emit event
+            this.debugLog('clear')
+            this.emit(MemoryDBEvent.Remove, { data: [] })
+        }
+
+        // Success
+        return new MemoryDBResult(true, [])
+    }
+
     // Remove duplicates
     public removeDuplicates(save: boolean = true): MemoryDBResult<T> {
         // Make values unique
@@ -244,7 +262,15 @@ export default class MemoryDB<T> {
     }
     //#endregion
 
-    //#region Serialization
-    
+    //#region Load/Save
+    //TODO: do not use ILoader<object>, use T instead and do smth if T isnt a object
+    public async load(loader: ILoader<object>, data: unknown): Promise<MemoryDBResult<T>> {
+        return this.insert(
+            await loader.load(data as any) as T[]
+        )
+    }
+    public async save(loader: ILoader<object>): Promise<string | null> {
+        return await loader.save(this.raw as object[])
+    }
     //#endregion
 }

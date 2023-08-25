@@ -16,7 +16,7 @@ let books: Book[] = [
 ]
 
 describe('Testing database duplicates removing (removeDuplicates())', () => {
-	test('Try to remove duplicates (simple)', () => {
+	test('Try to remove duplicates (primitives)', () => {
 		// Create database
 		let db: MemoryDB<number> = new MemoryDB('test')
 		db.insert(numbers)

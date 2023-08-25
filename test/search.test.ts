@@ -13,7 +13,7 @@ describe('Testing database finding (find())', () => {
 		let db: MemoryDB<string> = new MemoryDB('test')
 		db.insert(words)
 
-		// Find value starts with 'Wo'
+		// Find values that inclues 'l' substring
 		let result: MemoryDBResult<string> = db.search((row: string) => row.includes('l'))
 		expect(result.success).toBe(true)
 		expect(result.data).toEqual(words)
