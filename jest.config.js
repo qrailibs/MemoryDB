@@ -6,12 +6,9 @@
 	coverageReporters: ['html', 'lcov', 'text'],
 	coverageDirectory: '<rootDir>/coverage',
 	transform: {
-	  '^.+\\.ts': 'ts-jest',
+		'^.+\\.ts': ['ts-jest', {
+			tsconfig: 'tsconfig.json',
+		}],
 	},
 	testPathIgnorePatterns: ['<rootDir>/node_modules/'],
-	globals: {
-	  'ts-jest': {
-		tsconfig: 'tsconfig.json',
-	  },
-	},
-  }
+}
