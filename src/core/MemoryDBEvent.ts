@@ -1,7 +1,9 @@
 enum MemoryDBEvent {
     // Change operations
     Insert = 'insert',
+    Update = 'update',
     Remove = 'remove',
+    RemoveColumn = 'removeColumn',
     RemoveDuplicates = 'removeDuplicates',
     Sort = 'sort',
     Merge = 'merge',

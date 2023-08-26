@@ -1,7 +1,7 @@
-import fs from 'fs'
-
-// Result
+// Core
 import MemoryDBResult from "./MemoryDBResult"
+import MemoryDBEvent from "./MemoryDBEvent"
+import ILoader from "../loaders/ILoader"
 
 // Predicates
 import SortPredicate from "../predicate/SortPredicate"
@@ -10,13 +10,15 @@ import ChoosePredicate from "../predicate/ChoosePredicate"
 
 // Analytics
 import Analytics from "../analytics/Analytics"
-import MemoryDBEvent from "./MemoryDBEvent"
+
+// AI
+import AI from "../ai/AI"
+import ColumnMetadata from "../ai/ColumnMetadata"
+
+// Predicates
 import ColumnQuery from "../analytics/ColumnQuery"
 import MergePredicate from "../predicate/MergePredicate"
-import ILoader from "../loader/ILoader"
-
-// Core
-//import { createReadStream } from "fs"
+import UpdatePredicate from "../predicate/UpdatePredicate"
 
 export default class MemoryDB<T> {
     // Unique name of the database
@@ -36,6 +38,31 @@ export default class MemoryDB<T> {
         return this.data
     }
 
+    //#region Metadata
+    // Storing columns metadata
+    private metadata: ColumnMetadata<T>[] = []
+    // Describe head (columns metadata)
+    public describe(columns: Record<keyof T,Omit<ColumnMetadata<T>, 'name'>>) {
+        for(const columnName in columns) {
+            this.metadata.push({
+                name: columnName,
+                ...columns[columnName]
+            })
+        }
+    }
+    // Get head (columns metadata)
+    public head(): ColumnMetadata<T>[] | null {
+        return this.metadata.length > 0
+            ? this.metadata
+            : null
+    }
+    public headColumn(columnName: keyof T): ColumnMetadata<T> | null {
+        return this.metadata.length > 0
+            ? this.metadata.find((column) => column.name === columnName) ?? null
+            : null
+    }
+    //#endregion
+
     // Length of database (number of rows)
     public get length(): number {
         return this.data.length
@@ -44,6 +71,11 @@ export default class MemoryDB<T> {
     // Analytics
     public get Analytics(): Analytics<T> {
         return new Analytics(this)
+    }
+
+    // AI
+    public get AI(): AI<T> {
+        return new AI(this)
     }
 
     constructor(name: string) {
@@ -169,6 +201,24 @@ export default class MemoryDB<T> {
         return new MemoryDBResult(true)
     }
 
+    // Update rows
+    public update(predicate: UpdatePredicate<T>, save: boolean = true): MemoryDBResult<T> {
+        // Remove unecessary data
+        let data: T[] = this.data.map((row: T) => predicate(row))
+
+        // Save
+        if(save) {
+            this.data = data
+            
+            // Log, Emit event
+            this.debugLog('update')
+            this.emit(MemoryDBEvent.Update, { data })
+        }
+
+        // Success
+        return new MemoryDBResult(true, data)
+    }
+
     // Remove rows by predicate
     public remove(predicate: MatchPredicate<T>, save: boolean = true): MemoryDBResult<T> {
         // Remove unecessary data
@@ -181,6 +231,31 @@ export default class MemoryDB<T> {
             // Log, Emit event
             this.debugLog('remove')
             this.emit(MemoryDBEvent.Remove, { data })
+        }
+
+        // Success
+        return new MemoryDBResult(true, data)
+    }
+
+    // Remove column
+    public removeColumn(column: keyof T, save: boolean = true): MemoryDBResult<T> {
+        // Remove column from rows
+        let data: T[] = this.data.map((row: T) => {
+            delete row[column]
+            return row
+        })
+
+        // Save
+        if(save) {
+            // Remove column from rows
+            this.data = data
+
+            // Remove column from metadata
+            this.metadata = this.metadata.filter(columnMetadata => columnMetadata.name !== column)
+            
+            // Log, Emit event
+            this.debugLog('removeColumn')
+            this.emit(MemoryDBEvent.RemoveColumn, { data })
         }
 
         // Success

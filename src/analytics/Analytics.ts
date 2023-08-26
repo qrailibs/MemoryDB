@@ -4,11 +4,6 @@ import MatchPredicate from "../predicate/MatchPredicate"
 import SortPredicate from "../predicate/SortPredicate"
 import ColumnQuery from "./ColumnQuery"
 
-type Segment = {
-    percentage: number,
-    value: any
-}
-
 export default class Analytics<T> {
     private db: MemoryDB<T>
 
@@ -16,6 +11,7 @@ export default class Analytics<T> {
         this.db = database
     }
 
+    // Calculate percentage
     private percentage(partialValue: number, totalValue: number) {
         return (100 * partialValue) / totalValue;
     }

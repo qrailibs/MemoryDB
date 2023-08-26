@@ -50,3 +50,8 @@ db.insert('dog')
 // Find by predicate
 console.log(db.find(row => row.startsWith('c')).data) // "cow"
 ```
+
+# Dependencies
+- `alasql` - used for querying MemoryDB using SQL queries
+- `compress-json` – used for JSONCLoader (JSON Compressed)
+- `csv-parser` - used for CSVLoader
