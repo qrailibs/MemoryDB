@@ -1,3 +1,3 @@
-type SortPredicate<T> = (rowA: T, rowB: T) => number
+type SortPredicate<T> = (rowA: T, rowB: T) => number;
 
-export default SortPredicate
+export default SortPredicate;

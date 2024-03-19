@@ -1,3 +1,3 @@
-type UpdatePredicate<T> = (row: T) => T
+type UpdatePredicate<T> = (row: T) => T;
 
-export default UpdatePredicate
+export default UpdatePredicate;

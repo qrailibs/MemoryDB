@@ -31,9 +31,7 @@ describe('Testing SQL queries (MemoryDBCollection)', () => {
 		db.insert(toys_1)
 
 		// Create database collection for queries
-		let dbc: MemoryDBCollection = new MemoryDBCollection([
-			db
-		])
+		const dbc: MemoryDBCollection = new MemoryDBCollection([db])
 		await dbc.init()
 
 		// Query toys

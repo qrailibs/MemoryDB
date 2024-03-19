@@ -1,3 +1,3 @@
-type MatchPredicate<T> = (row: T) => boolean
+type MatchPredicate<T> = (row: T) => boolean;
 
-export default MatchPredicate
+export default MatchPredicate;

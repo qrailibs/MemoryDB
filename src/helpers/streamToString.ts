@@ -1,9 +1,12 @@
-import { ReadStream } from "fs"
+import { ReadStream } from "fs";
 
+/**
+ * Read entire `ReadStream` with an encoding as string
+ */
 export default async function streamToString(stream: ReadStream, encoding: BufferEncoding = "utf-8") {
-    const buffers = []
+    const buffers = [];
     for await (const chunk of stream) {
-        buffers.push(Buffer.from(chunk))
+        buffers.push(Buffer.from(chunk));
     }
-    return Buffer.concat(buffers).toString(encoding)
+    return Buffer.concat(buffers).toString(encoding);
 }
