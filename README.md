@@ -69,8 +69,10 @@ db.clear()
 ### Remove duplicates with predicate
 
 ```typescript
+// remove rows, where value of "price" is same
 db.removeDuplicatesByPredicate(
-    (duplicateRows) => [ duplicateRows[0] ]
+    (duplicateRows) => [ duplicateRows[0] ],
+    "price"
 )
 ```
 
@@ -126,4 +128,20 @@ const { data } = db.find(
 const { data } = db.search(
     row => row.name.includes("toy")
 )
+```
+
+### Chain multiple operations
+
+```typescript
+db.chain([
+    _ => _.insert({ name: "Test", price: 7500 }),
+    _ => _.map(row => {...row, price: price + 500 }),
+    _ => _.map(row => {...row, name: name + " toy" })
+])
+```
+
+### Display contents of table
+
+```typescript
+db.head()
 ```
