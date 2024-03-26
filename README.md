@@ -1,57 +1,129 @@
 # MemoryDB
-In-memory database with Queries, Event-handling, Analytics written in TypeScript
+
+In-memory typesafe database with Queries, Events, Analytics.
 
 # Installation
+
 ```bash
-npm i memorydb
+npm i @datasco/memorydb # pnpm add @datasco/memorydb
 ```
 
 # Usage
+
 You can use MemoryDB for creating in-memory database with any type of data.
 
-### Storing primitives
+### Creating instance of database
+
+Primitive database:
+
 ```typescript
-// Create database
-let db: MemoryDB<string> = new MemoryDB('primitives')
-db.insert('Hello')
-db.insert('World')
-console.log(db.raw) // [ 'Hello', 'World' ]
+const db = new MemoryDB<string>("primitives_database")
 ```
 
-### Storing typed data
-```typescript
-type Toy = { name: string, price: number }
-const toys: Toy[] = [
-	{ name: 'Toy Bear', price: 1000 },
-	{ name: 'Toy Dog', price: 2000 },
-	{ name: 'Toy Cat', price: 3000 },
-	{ name: 'Doll Monkey', price: 4000 },
-	{ name: 'Doll Wolf', price: 5000 }
-]
+Typed object-based database:
 
-// Create database
-let db: MemoryDB<Toy> = new MemoryDB('toys')
-// Batch insert (insert array of toys)
-db.insert(toys)
-// Find Monkey toy
-const monkeyToy = db.find((row) => row.name.includes('Monkey')).data
-console.log(monkeyToy) // { name: 'Doll Monkey', price: 4000 }
+```typescript
+const db = new MemoryDB<{
+    name: string;
+    price: number;
+}>("complex_database")
 ```
 
-### Finding data
-```typescript
-// Create database
-let db: MemoryDB<Toy> = new MemoryDB('toys')
-db.insert('monkey')
-db.insert('cow')
-db.insert('bear')
-db.insert('dog')
+### Insert row
 
-// Find by predicate
-console.log(db.find(row => row.startsWith('c')).data) // "cow"
+```typescript
+db.insert({ name: "Bear toy", price: 1000 })
 ```
 
-# Dependencies
-- `alasql` - used for querying MemoryDB using SQL queries
-- `compress-json` – used for JSONCLoader (JSON Compressed)
-- `csv-parser` - used for CSVLoader
+### Insert multiple rows
+
+```typescript
+db.insert([
+    { name: "Cat toy", price: 2000 },
+    { name: "Dog toy", price: 3000 },
+])
+```
+
+### Mapping rows
+
+```typescript
+db.map(
+    row => ({ ...row, price: price + 100 })
+)
+```
+
+### Remove rows
+
+```typescript
+db.remove(
+    row => row.price > 1000
+)
+```
+
+### Remove all rows
+
+```typescript
+db.clear()
+```
+
+### Remove duplicates with predicate
+
+```typescript
+db.removeDuplicatesByPredicate(
+    (duplicateRows) => [ duplicateRows[0] ]
+)
+```
+
+### Remove duplicates (primitive)
+
+```typescript
+db.removeDuplicates()
+```
+
+### Remove column
+
+```typescript
+db.removeColumn("price")
+```
+
+### Splitting into chunks
+
+```typescript
+// split database into chunks of size 5
+db.chunks(5)
+```
+
+### Merge with another database
+
+```typescript
+db.merge(new MemoryDB("another_db"))
+```
+
+### Listing rows
+
+```typescript
+const { data } = db.list()
+```
+
+### Listing rows, but paginated
+
+```typescript
+// 1 page, 50 rows per page
+const { data } = db.listPaginated(1, 50)
+```
+
+### Find row
+
+```typescript
+const { data } = db.find(
+    row => row.name === "Bear toy"
+)
+```
+
+### Search row
+
+```typescript
+const { data } = db.search(
+    row => row.name.includes("toy")
+)
+```

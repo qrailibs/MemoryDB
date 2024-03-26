@@ -2,20 +2,22 @@
 import MemoryDBResult from "./MemoryDBResult";
 import MemoryDBEvent from "./MemoryDBEvent";
 import MemoryDBEventListener from "./MemoryDBEventListener";
+import ColumnQuery from "../analytics/ColumnQuery";
 import ILoader from "../loaders/ILoader";
 
 // Predicates
 import SortPredicate from "../predicate/SortPredicate";
 import MatchPredicate from "../predicate/MatchPredicate";
 import ChoosePredicate from "../predicate/ChoosePredicate";
+import UpdatePredicate from "../predicate/UpdatePredicate";
+import MergePredicate from "../predicate/MergePredicate";
 
 // Analytics
 import Analytics from "../analytics/Analytics";
 
-// Predicates
-import ColumnQuery from "../analytics/ColumnQuery";
-import MergePredicate from "../predicate/MergePredicate";
-import UpdatePredicate from "../predicate/UpdatePredicate";
+// Helpers
+import prettifyTable from "../helpers/prettifyTable";
+import ChainOperation from "../predicate/ChainOperation";
 
 /**
  * Class used to instantiate database.
@@ -36,9 +38,15 @@ export default class MemoryDB<T> {
             console.log(`[MemoryDB] Executed "${action}"`);
         }
     }
+    private debugError(action: string, error: string) {
+        if (this.debug) {
+            console.log(`[MemoryDB] Executed "${action}", but failed: ${error}`);
+        }
+    }
 
     // Storing all data as raw array
     private data: T[] = [];
+
     /**
      * All rows of database
      */
@@ -54,6 +62,60 @@ export default class MemoryDB<T> {
     }
 
     /**
+     * Display columns and first rows of the table
+     * @param amountOfRows how many first rows will be displayed (default is 10)
+     */
+    public head(amountOfRows: number = 10): string {
+        return prettifyTable<T>(this.data.slice(0, amountOfRows));
+    }
+
+    /**
+     * Chain multiple database operations into one
+     * @param operations operations that will be chained and executed
+     */
+    public chain(operations: ChainOperation<T>[], save: boolean = true): MemoryDBResult<T> {
+        let currentDB: MemoryDB<T> = this;
+
+        // Chain operations
+        for (const operation of operations) {
+            const { success, data } = operation(currentDB);
+
+            // Failed
+            if (!success || !data || !Array.isArray(data)) {
+                if (!data) {
+                    this.debugError(
+                        "chain",
+                        `result of operation in chain was not of type T[], but falsetive instead (${data})`
+                    );
+                } else if (!Array.isArray(data)) {
+                    this.debugError(
+                        "chain",
+                        `result of operation in chain was not of type T[], but T instead (${data})`
+                    );
+                }
+
+                return new MemoryDBResult(false);
+            }
+            // Success
+            else {
+                // Create new instance of database with changed data
+                currentDB = new MemoryDB<T>(this.name, data);
+            }
+        }
+
+        // Save
+        if (save) {
+            this.data = currentDB.raw;
+
+            // Log, Emit event
+            this.debugLog("chain");
+            this.emit(MemoryDBEvent.Chain, { data: currentDB.raw });
+        }
+
+        return new MemoryDBResult(true, currentDB.raw);
+    }
+
+    /**
      * Analytics for this database
      */
     public get Analytics(): Analytics<T> {
@@ -63,10 +125,12 @@ export default class MemoryDB<T> {
     /**
      * Instantiate an database
      * @param name unique name of database
+     * @param data data to be stored in database
      * @constructor
      */
-    constructor(name: string) {
+    constructor(name: string, data: T[] = []) {
         this.name = name;
+        this.data = data;
     }
 
     //#region Events
@@ -99,36 +163,31 @@ export default class MemoryDB<T> {
     /**
      * Insert row or rows
      * @param value row or array of rows to insert into database
+     * @param save save changes of this action in database
      */
-    public insert(value: T | T[]): MemoryDBResult<T> {
-        // Batch insert
-        if (Array.isArray(value)) {
-            this.data = this.data.concat(value);
+    public insert(value: T | T[], save: boolean = true): MemoryDBResult<T> {
+        // Insert new row(s)
+        const data: T[] = this.data.concat(Array.isArray(value) ? value : [value]);
+
+        // Save
+        if (save) {
+            this.data = data;
 
             // Log, Emit event
             this.debugLog("insert");
-            this.emit(MemoryDBEvent.Insert, { value });
-
-            // Success
-            return new MemoryDBResult(true);
+            this.emit(MemoryDBEvent.Insert, { data });
         }
-        // Single insert
-        else {
-            this.data.push(value);
 
-            // Log, Emit event
-            this.debugLog("insert");
-            this.emit(MemoryDBEvent.Insert, { value });
-
-            // Success
-            return new MemoryDBResult(true);
-        }
+        // Success
+        return new MemoryDBResult(true, data);
     }
 
-    //#region Finding
-    // Get list of values from database
+    //#region Listing & Finding
+    /**
+     * Get list of values, same as `.raw`, but `MemoryDBEvent.List` will be emitted
+     */
     public list(): MemoryDBResult<T> {
-        let data: T[] = this.data;
+        const data: T[] = this.data;
 
         // Log, Emit event
         this.debugLog("list");
@@ -137,9 +196,14 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, data);
     }
-    // Get list of values (paginated) from database
+
+    /**
+     * Get list of values paginated
+     * @param page page to get
+     * @param perPage how many rows will be listed per page
+     */
     public listPaginated(page: number, perPage: number = 50): MemoryDBResult<T> {
-        let data: T[] = this.data.slice((page - 1) * perPage, page * perPage);
+        const data: T[] = this.data.slice((page - 1) * perPage, page * perPage);
 
         // Log, Emit event
         this.debugLog("listPaginated");
@@ -148,12 +212,16 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, data);
     }
-    // Find value in database
+
+    /**
+     * Find row, works like `[].find`
+     * @param predicate predicate function that will be used to find row
+     */
     public find(predicate: MatchPredicate<T>): MemoryDBResult<T> {
-        let data: T[] = this.data;
+        const data: T[] = this.data;
 
         // Find
-        let result = data.find(predicate);
+        const result = data.find(predicate);
 
         // Log, Emit event
         this.debugLog("find");
@@ -162,12 +230,15 @@ export default class MemoryDB<T> {
         // Success
         return new MemoryDBResult(true, result);
     }
-    // Search for values in database
+    /**
+     * Find multiple rows, works like `[].filter`
+     * @param predicate predicate function that will be used to find row
+     */
     public search(predicate: MatchPredicate<T>): MemoryDBResult<T> {
-        let data: T[] = this.data;
+        const data: T[] = this.data;
 
         // Find
-        let result: T[] = data.filter(predicate);
+        const result: T[] = data.filter(predicate);
 
         // Log, Emit event
         this.debugLog("search");
@@ -210,7 +281,7 @@ export default class MemoryDB<T> {
      */
     public map(predicate: UpdatePredicate<T>, save: boolean = true): MemoryDBResult<T> {
         // Remove unecessary data
-        let data: T[] = this.data.map((row: T) => predicate(row));
+        const data: T[] = this.data.map((row: T) => predicate(row));
 
         // Save
         if (save) {
@@ -273,6 +344,25 @@ export default class MemoryDB<T> {
 
         // Success
         return new MemoryDBResult(true, data);
+    }
+
+    /**
+     * Split current database into smaller chunks (databases also)
+     * @param chunkSize size of smaller chunks (amount of rows in them)
+     * @returns chunks, as databases
+     */
+    public chunks(chunkSize: number): MemoryDB<T>[] {
+        const chunks: MemoryDB<T>[] = [];
+
+        // Split data into chunks
+        for (let i = 0; i < this.data.length; i += chunkSize) {
+            const chunk = this.data.slice(i, i + chunkSize);
+
+            // Create database for chunk
+            chunks.push(new MemoryDB<T>(`${this.name}_${chunks.length}`, chunk));
+        }
+
+        return chunks;
     }
 
     /**
@@ -396,6 +486,7 @@ export default class MemoryDB<T> {
     public async load(loader: ILoader<object>, data: unknown): Promise<MemoryDBResult<T>> {
         return this.insert((await loader.load(data as any)) as T[]);
     }
+
     /**
      * Save rows as raw dump
      * @param loader serializer class to be used
