@@ -4,6 +4,10 @@ import MatchPredicate from "../predicate/MatchPredicate";
 import SortPredicate from "../predicate/SortPredicate";
 import ColumnQuery from "./ColumnQuery";
 
+/**
+ * Class that provides API for doing math and analytics with database
+ * @template T type of a rows
+ */
 export default class Analytics<T> {
     private db: MemoryDB<T>;
 
@@ -11,6 +15,7 @@ export default class Analytics<T> {
         this.db = database;
     }
 
+    //#region Private methods
     // Calculate percentage
     private percentage(partialValue: number, totalValue: number) {
         return (100 * partialValue) / totalValue;
@@ -66,6 +71,7 @@ export default class Analytics<T> {
             return data;
         }
     }
+    // Get a column in a row or whole row
     private value(row: T, column?: ColumnQuery) {
         return column ? column.use(row as any) : row;
     }
@@ -88,15 +94,21 @@ export default class Analytics<T> {
 
         return numbers;
     }
+    //#endregion
 
     //#region Graphs
-    // Get occurrences in column and amount of them
+    /**
+     * Get occurrences in column and amount of them
+     * @param column column to use for counting
+     * @param percentage calculate a amount (if `false`) or percentage (if `true`) of values
+     * @returns `{ [value]: amount or percentage }`
+     */
     public occurrences(column: ColumnQuery, percentage: boolean = false): Record<string, number> {
         let values: any[] = this.values(column);
 
         // 1. Count amount of occurrences of each value
-        let _occurrences: Record<string, number> = {};
-        for (let value of values) {
+        const _occurrences: Record<string, number> = {};
+        for (const value of values) {
             if (value.toString() in _occurrences) {
                 _occurrences[value]++;
             } else {
@@ -105,11 +117,11 @@ export default class Analytics<T> {
         }
 
         // 2. Calculate percentage
-        if (percentage === true) {
+        if (percentage) {
             let amountOfValues = this.db.length;
 
-            for (let value in _occurrences) {
-                let amount = _occurrences[value];
+            for (const value in _occurrences) {
+                const amount = _occurrences[value];
 
                 _occurrences[value] = this.percentage(amount, amountOfValues);
             }
@@ -120,6 +132,11 @@ export default class Analytics<T> {
     //#endregion
 
     //#region Mathematical
+    /**
+     * Find a minimal number value in a column
+     * @param column column to use
+     * @returns `number | NaN` (`NaN` if rows < 1)
+     */
     public min(column?: ColumnQuery): number {
         // Known value without calculating
         if (this.db.length === 0) {
@@ -132,6 +149,11 @@ export default class Analytics<T> {
         // Get min value
         return Math.min(...data);
     }
+    /**
+     * Find a maximum number value in a column
+     * @param column column to use
+     * @returns `number | NaN` (`NaN` if rows < 1)
+     */
     public max(column?: ColumnQuery): number {
         // Known value without calculating
         if (this.db.length === 0) {
@@ -145,7 +167,12 @@ export default class Analytics<T> {
         return Math.max(...data);
     }
 
-    // Get amount of rows that met predicate
+    /**
+     * Count a number of rows that matched condition
+     * @param predicate predicate function that returns `true` to count or `false` to not count
+     * @param column pass this column to predicate, if `false` whole row will be passed
+     * @returns amount of rows that matched condition (predicate)
+     */
     public count(predicate: MatchPredicate<any>, column?: ColumnQuery): number {
         // Known value without calculating
         if (this.db.length === 0) {
@@ -159,7 +186,11 @@ export default class Analytics<T> {
         return data.reduce((accum: number, val: any) => accum + (predicate(val) ? 1 : 0), 0);
     }
 
-    // Get length of rows with this column
+    /**
+     * Count a number of rows that has column (or just count rows)
+     * @param column count rows that has this column, if not passed – total amount of rows will be counted
+     * @returns amount of rows that has column (or total amount of rows)
+     */
     public len(column?: ColumnQuery): number {
         // Known value without calculating
         if (this.db.length === 0) {
@@ -173,7 +204,11 @@ export default class Analytics<T> {
         return data.reduce((accum: number, row: any) => accum + (row ? 1 : 0), 0);
     }
 
-    // Get sum of number values (by column in database)
+    /**
+     * Count a sum of numbers (in a column, or a primitive rows)
+     * @param column count numbers from that column, if not passed – rows will be counted
+     * @returns total sum of numbers in a column (or a values of primitive rows)
+     */
     public sum(column?: ColumnQuery): number {
         // Cannot calculate without rows
         if (this.db.length === 0) {
@@ -187,7 +222,11 @@ export default class Analytics<T> {
         return values.reduce((accum: number, value: T) => accum + (typeof value === "number" ? value : 0), 0);
     }
 
-    // Get median value of number values (by column in database)
+    /**
+     * Count a median value of numbers (in a column, or a primitive rows)
+     * @param column count numbers from that column, if not passed – rows will be counted
+     * @returns median value of numbers in a column (or a values of primitive rows)
+     */
     public median(column?: ColumnQuery): number {
         // Cannot calculate without rows
         if (this.db.length === 0) {
@@ -208,13 +247,16 @@ export default class Analytics<T> {
         } else {
             return (
                 // ((Half - 1) + Half) / 2.0
-                (this.value(rows[halfIndex - 1], column) + this.value(rows[halfIndex], column)) /
-                2.0
+                (this.value(rows[halfIndex - 1], column) + this.value(rows[halfIndex], column)) / 2.0
             );
         }
     }
 
-    // Get average value of number values (by column in database)
+    /**
+     * Count a average value of numbers (in a column, or a primitive rows)
+     * @param column count numbers from that column, if not passed – rows will be counted
+     * @returns average value of numbers in a column (or a values of primitive rows)
+     */
     public average(column?: ColumnQuery): number {
         let sum: number = this.sum(column);
 
@@ -224,15 +266,24 @@ export default class Analytics<T> {
     //#endregion
 
     //#region Finding
-    // Find rows where values of column are missing (null or undefined)
-    public missing(column: string): T[] {
+    /**
+     * Find rows where values of column are missing (null or undefined)
+     * @param column column to find a rows with value missing in it
+     * @returns rows that have missing value in a column
+     */
+    public missing(column: ColumnQuery): T[] {
         // Get database rows
-        let rows: T[] = this.rows();
+        const rows: T[] = this.rows();
 
         // Find rows where value of column is null
-        return rows.filter((row: T) => (row as any)[column] == null);
+        return rows.filter((row: T) => column.use(row) == null);
     }
-    // Find rows where values of column are duplicates
+
+    /**
+     * Find rows where values of column are duplicates
+     * @param column column to find a rows with value is duplicate in it, if not passed – whole row will be used
+     * @returns rows that have duplicate value in a column (or duplicate rows, if column not specified)
+     */
     public duplicates(column?: ColumnQuery): T[] {
         // Get database rows
         let rows: T[] = this.rows();

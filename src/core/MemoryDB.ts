@@ -11,13 +11,13 @@ import MatchPredicate from "../predicate/MatchPredicate";
 import ChoosePredicate from "../predicate/ChoosePredicate";
 import UpdatePredicate from "../predicate/UpdatePredicate";
 import MergePredicate from "../predicate/MergePredicate";
+import ChainOperation from "../predicate/ChainOperation";
 
 // Analytics
 import Analytics from "../analytics/Analytics";
 
 // Helpers
 import prettifyTable from "../helpers/prettifyTable";
-import ChainOperation from "../predicate/ChainOperation";
 
 /**
  * Class used to instantiate database.
@@ -25,14 +25,17 @@ import ChainOperation from "../predicate/ChainOperation";
  */
 export default class MemoryDB<T> {
     /**
-     * Unique name of the database
+     * Unique name of the database.
+     * Actually this name doesn't matter.
      */
     public name: string;
 
     /**
-     * Do debug manipulations with database
+     * Do logging of all database oprations
+     * @default false
      */
     public debug: boolean = false;
+
     private debugLog(action: string) {
         if (this.debug) {
             console.log(`[MemoryDB] Executed "${action}"`);
@@ -44,11 +47,13 @@ export default class MemoryDB<T> {
         }
     }
 
-    // Storing all data as raw array
+    // MemoryDB engine is simple – we are gonna store all data as raw array
+    // its simple, its easy-to-use, its fast
     private data: T[] = [];
 
     /**
-     * All rows of database
+     * All rows of database, as array.
+     * Better to use `.list()` to make operation emit an event.
      */
     public get raw() {
         return this.data;
@@ -70,7 +75,9 @@ export default class MemoryDB<T> {
     }
 
     /**
-     * Chain multiple database operations into one
+     * Chain multiple database operations into one.
+     * Those actions will mutate current database.
+     *
      * @param operations operations that will be chained and executed
      */
     public chain(operations: ChainOperation<T>[], save: boolean = true): MemoryDBResult<T> {
@@ -84,13 +91,13 @@ export default class MemoryDB<T> {
             if (!success || !data || !Array.isArray(data)) {
                 if (!data) {
                     this.debugError(
-                        "chain",
-                        `result of operation in chain was not of type T[], but falsetive instead (${data})`
+                        "chainMutations",
+                        `result of operation in chainMutations() was not of type T[], but falsetive instead (${data})`
                     );
                 } else if (!Array.isArray(data)) {
                     this.debugError(
-                        "chain",
-                        `result of operation in chain was not of type T[], but T instead (${data})`
+                        "chainMutations",
+                        `result of operation in chainMutations() was not of type T[], but T instead (${data})`
                     );
                 }
 
@@ -108,7 +115,7 @@ export default class MemoryDB<T> {
             this.data = currentDB.raw;
 
             // Log, Emit event
-            this.debugLog("chain");
+            this.debugLog("chainMutations");
             this.emit(MemoryDBEvent.Chain, { data: currentDB.raw });
         }
 
@@ -116,9 +123,10 @@ export default class MemoryDB<T> {
     }
 
     /**
-     * Analytics for this database
+     * Get analytics engine for this database.
+     * Analytics API allows to execute math operations on your database.
      */
-    public get Analytics(): Analytics<T> {
+    public get analytics(): Analytics<T> {
         return new Analytics(this);
     }
 
@@ -419,7 +427,7 @@ export default class MemoryDB<T> {
         save: boolean = true
     ): MemoryDBResult<T> {
         // Get duplicates
-        let duplicates: T[] = this.Analytics.duplicates(column);
+        let duplicates: T[] = this.analytics.duplicates(column);
 
         // Choose duplicate to keep (with predicate)
         let predicateResult: T | T[] = predicate(duplicates);

@@ -140,8 +140,12 @@ db.chain([
 ])
 ```
 
-### Display contents of table
-
+### (Analytics) Use Analytics API
 ```typescript
-db.head()
+const {analytics} = db
+```
+
+### (Analytics) Display contents of table
+```typescript
+analytics.head()
 ```

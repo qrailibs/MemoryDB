@@ -1,6 +1,7 @@
 enum MemoryDBEvent {
-    // Change operations
     Chain = "chain",
+
+    // Change operations
     Insert = "insert",
     Update = "update",
     Remove = "remove",

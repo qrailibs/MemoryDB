@@ -4,8 +4,20 @@ import { ReadStream } from "fs";
 import ILoader from "./ILoader";
 
 type CSVLoaderParams<TRecord> = {
+    /**
+     * Separator for the columns
+     * @default ','
+     */
     columnSeparator?: string;
+    /**
+     * Separator for the rows
+     * @default '\n'
+     */
     rowSeparator?: string;
+
+    /**
+     * Columns of table, that will be used to save CSV
+     */
     columns: (keyof TRecord)[];
 };
 
@@ -16,8 +28,8 @@ type CSVLoaderParams<TRecord> = {
 export default class CSVLoader<TRecord extends object> implements ILoader<TRecord, ReadStream, string> {
     private params: CSVLoaderParams<TRecord>;
 
-    constructor(_params: CSVLoaderParams<TRecord>) {
-        this.params = _params;
+    constructor(params: CSVLoaderParams<TRecord>) {
+        this.params = params;
     }
 
     async load(stream: ReadStream) {

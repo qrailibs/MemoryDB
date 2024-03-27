@@ -1,10 +1,8 @@
 import SortPredicate from "../predicate/SortPredicate";
 
-function DescendingSort<T>(column: string): SortPredicate<T> {
-    return ((a: T, b: T) => {
+export default function DescendingSort<TRecord>(column: keyof TRecord): SortPredicate<TRecord> {
+    return ((a: TRecord, b: TRecord) => {
         // B - A (Descending)
         return (b as any)[column] ?? 0 - (a as any)[column] ?? 0;
-    }) as SortPredicate<T>;
+    }) as SortPredicate<TRecord>;
 }
-
-export default DescendingSort;

@@ -13,11 +13,13 @@ export default class JSONCLoader<TRecord extends object> implements ILoader<TRec
         if (typeof data !== "string") data = await streamToString(data);
 
         const dataCompressed = JSON.parse(data);
+
         return decompress(dataCompressed) as TRecord[];
     }
 
     async save(value: TRecord[]) {
         const dataCompressed = compress(value);
+
         return JSON.stringify(dataCompressed);
     }
 }
